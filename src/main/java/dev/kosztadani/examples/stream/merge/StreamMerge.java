@@ -1,8 +1,7 @@
 package dev.kosztadani.examples.stream.merge;
 
 import java.util.Comparator;
-import java.util.Spliterator;
-import java.util.Spliterators;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -89,8 +88,8 @@ public class StreamMerge {
      * @return A merged stream.
      */
     public static Stream mergeStreamsUnchecked(Comparator comparator, Stream... streams) {
-        OrderedMultiStreamIterator iterator = new OrderedMultiStreamIterator(comparator, streams);
-        Spliterator spliterator = Spliterators.spliteratorUnknownSize(iterator, 0);
-        return (Stream) StreamSupport.stream(spliterator, false).onClose(iterator::close);
+        OrderedMultiStreamSpliteratorFactory factory = new OrderedMultiStreamSpliteratorFactory(comparator, streams);
+        Stream mergedStream = (StreamSupport.stream((Supplier) factory, 0, false));
+        return (Stream) mergedStream.onClose(factory::close);
     }
 }
