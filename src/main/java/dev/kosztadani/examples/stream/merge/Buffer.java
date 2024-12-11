@@ -2,18 +2,18 @@ package dev.kosztadani.examples.stream.merge;
 
 import java.util.NoSuchElementException;
 
-class Buffer {
+class Buffer<T> {
 
-    private Object object;
+    private T object;
 
     private boolean isEmpty = true;
 
-    public void set(Object object) {
+    void set(T object) {
         this.object = object;
         isEmpty = false;
     }
 
-    public Object get() {
+    T get() {
         if (isEmpty) {
             throw new NoSuchElementException();
         } else {
@@ -21,12 +21,12 @@ class Buffer {
         }
     }
 
-    public void clear() {
+    void clear() {
         object = null;
         isEmpty = true;
     }
 
-    public boolean isPresent() {
+    boolean isPresent() {
         return !isEmpty;
     }
 }

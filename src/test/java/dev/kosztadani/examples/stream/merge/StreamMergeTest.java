@@ -10,6 +10,7 @@ import java.util.stream.Stream;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class StreamMergeTest {
+
     @Test
     void testNoArguments() {
         Stream<Integer> stream = Stream.empty();
@@ -56,7 +57,6 @@ public class StreamMergeTest {
         Stream<Integer> merged = StreamMerge.mergeStreams(first, second);
 
         assertEquals(List.of(1, 1, 1, 3, 4, 5), merged.collect(Collectors.toList()));
-
     }
 
     @Test
@@ -67,8 +67,8 @@ public class StreamMergeTest {
         Stream<Integer> merged = StreamMerge.mergeStreams(first, second);
 
         assertEquals(List.of(1, 2, 3), merged.collect(Collectors.toList()));
-
     }
+
     @Test
     void testSecondEmpty() {
         Stream<Integer> first = Stream.of(1, 2, 3);
@@ -77,7 +77,6 @@ public class StreamMergeTest {
         Stream<Integer> merged = StreamMerge.mergeStreams(first, second);
 
         assertEquals(List.of(1, 2, 3), merged.collect(Collectors.toList()));
-
     }
 
     @Test
@@ -111,9 +110,8 @@ public class StreamMergeTest {
         Stream<Integer> first = Stream.of(5, 3, 1);
         Stream<Integer> second = Stream.of(6, 4, 2);
 
-        @SuppressWarnings("unchecked")
-        Stream<Integer> merged = StreamMerge.mergeStreamsUnchecked(
-            Comparator.naturalOrder().reversed(),
+        Stream<Integer> merged = StreamMerge.mergeStreams(
+            Comparator.reverseOrder(),
             first,
             second
         );
@@ -126,11 +124,10 @@ public class StreamMergeTest {
         Stream<Integer> integers = Stream.of(1, 3, 5);
         Stream<Float> floats = Stream.of(2.0F, 4.0F);
 
-        @SuppressWarnings({"rawtypes", "unchecked"})
         Stream<Number> merged = StreamMerge.mergeStreams(
             Comparator.comparing(Number::doubleValue),
-            (Stream) integers,
-            (Stream) floats);
+            integers,
+            floats);
 
         assertEquals(List.of(1, 2.0F, 3, 4.0F, 5), merged.collect(Collectors.toList()));
     }
@@ -140,8 +137,7 @@ public class StreamMergeTest {
         Stream<Integer> integers = Stream.of(1, 3, 5);
         Stream<Float> floats = Stream.of(2.0F, 4.0F);
 
-        @SuppressWarnings("unchecked")
-        Stream<Number> merged = StreamMerge.mergeStreamsUnchecked(
+        Stream<Number> merged = StreamMerge.mergeStreams(
             Comparator.comparing(Number::doubleValue),
             integers,
             floats

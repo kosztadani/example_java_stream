@@ -1,35 +1,38 @@
 package dev.kosztadani.examples.stream.merge;
 
 import java.util.Comparator;
+import java.util.List;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-@SuppressWarnings("rawtypes")
-class OrderedMultiStreamSpliteratorFactory implements Supplier<Spliterator>, AutoCloseable {
+class OrderedMultiStreamSpliteratorFactory<T> implements Supplier<Spliterator<T>>, AutoCloseable {
 
-    private final Comparator comparator;
+    private final Comparator<? super T> comparator;
 
-    private final Stream[] streams;
+    private final List<Stream<? extends T>> streams;
 
-    private OrderedMultiStreamIterator iterator;
+    private OrderedMultiStreamIterator<T> iterator;
 
-    OrderedMultiStreamSpliteratorFactory(Comparator comparator, Stream... streams) {
+    OrderedMultiStreamSpliteratorFactory(Comparator<? super T> comparator, List<Stream<? extends T>> streams) {
         this.comparator = comparator;
         this.streams = streams;
     }
 
-
     @Override
-    synchronized public Spliterator get() {
-        iterator = new OrderedMultiStreamIterator(comparator, streams);
+    synchronized public Spliterator<T> get() {
+        iterator = new OrderedMultiStreamIterator<>(comparator, streams);
         return Spliterators.spliteratorUnknownSize(iterator, 0);
     }
 
     @Override
     synchronized public void close() {
-        if (iterator != null) {
+        if (iterator == null) {
+            for (Stream<?> stream : streams) {
+                stream.close();
+            }
+        } else {
             iterator.close();
         }
     }

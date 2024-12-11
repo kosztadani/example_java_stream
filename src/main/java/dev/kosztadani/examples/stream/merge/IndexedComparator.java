@@ -4,20 +4,19 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.Map;
 
-@SuppressWarnings({"rawtypes", "unchecked"})
-class IndexedComparator implements Comparator<BufferedIterator> {
+class IndexedComparator<T> implements Comparator<BufferedIterator<T>> {
 
-    private final Comparator primaryComparator;
+    private final Comparator<? super T> primaryComparator;
 
-    private final Map<Iterator, Integer> secondaryOrder;
+    private final Map<Iterator<?>, Integer> secondaryOrder;
 
-    IndexedComparator(Comparator primaryComparator, Map<Iterator, Integer> secondaryOrder) {
+    IndexedComparator(Comparator<? super T> primaryComparator, Map<Iterator<?>, Integer> secondaryOrder) {
         this.primaryComparator = primaryComparator;
         this.secondaryOrder = secondaryOrder;
     }
 
     @Override
-    public int compare(BufferedIterator i1, BufferedIterator i2) {
+    public int compare(BufferedIterator<T> i1, BufferedIterator<T> i2) {
         int primaryComparison = primaryComparator.compare(i1.peek(), i2.peek());
         if (primaryComparison != 0) {
             return primaryComparison;

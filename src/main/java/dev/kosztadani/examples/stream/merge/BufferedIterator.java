@@ -1,16 +1,14 @@
 package dev.kosztadani.examples.stream.merge;
 
-
 import java.util.Iterator;
 
-@SuppressWarnings({"rawtypes"})
-class BufferedIterator implements Iterator {
+class BufferedIterator<T> implements Iterator<T> {
 
-    private final Iterator delegate;
+    private final Iterator<? extends T> delegate;
 
-    private final Buffer buffer = new Buffer();
+    private final Buffer<T> buffer = new Buffer<>();
 
-    BufferedIterator(Iterator iterator) {
+    BufferedIterator(Iterator<? extends T> iterator) {
         delegate = iterator;
     }
 
@@ -20,9 +18,9 @@ class BufferedIterator implements Iterator {
     }
 
     @Override
-    public Object next() {
+    public T next() {
         if (buffer.isPresent()) {
-            Object object = buffer.get();
+            T object = buffer.get();
             buffer.clear();
             return object;
         } else {
@@ -30,7 +28,7 @@ class BufferedIterator implements Iterator {
         }
     }
 
-    public Object peek() {
+    T peek() {
         if (!buffer.isPresent()) {
             buffer.set(delegate.next());
         }

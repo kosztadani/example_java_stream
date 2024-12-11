@@ -3,50 +3,51 @@ package dev.kosztadani.examples.stream.merge;
 import java.util.*;
 import java.util.stream.Stream;
 
-@SuppressWarnings({"rawtypes", "unchecked"})
-public class OrderedMultiStreamIterator implements Iterator, AutoCloseable {
+class OrderedMultiStreamIterator<T> implements Iterator<T>, AutoCloseable {
 
-    private final Map<Iterator, Stream> map = new IdentityHashMap<>();
+    private final Map<Iterator<T>, Stream<? extends T>> map = new IdentityHashMap<>();
 
-    private final Map<Iterator, Integer> originalOrder = new IdentityHashMap<>();
+    private final Map<Iterator<?>, Integer> originalOrder = new IdentityHashMap<>();
 
-    private final List<Iterator> iterators = new ArrayList<>();
+    private final List<BufferedIterator<T>> iterators = new ArrayList<>();
 
-    private final Comparator comparator;
+    private final Comparator<BufferedIterator<T>> comparator;
 
-    OrderedMultiStreamIterator(Comparator comparator, Stream... streams) {
-        this.comparator = new IndexedComparator(comparator, originalOrder);
+    private final List<Exception> closeExceptions = new ArrayList<>();
+
+    OrderedMultiStreamIterator(Comparator<? super T> comparator, List<Stream<? extends T>> streams) {
+        this.comparator = new IndexedComparator<>(comparator, originalOrder);
         addStreams(streams);
         sort();
     }
 
-    private void addStreams(Stream... streams) {
-        for (int i = 0; i < streams.length; i++) {
-            addStream(i, streams[i]);
+    private void addStreams(List<Stream<? extends T>> streams) {
+        for (int i = 0; i < streams.size(); i++) {
+            addStream(i, streams.get(i));
         }
     }
 
-    private void addStream(int index, Stream stream) {
-        Iterator streamIterator = stream.iterator();
+    private void addStream(int index, Stream<? extends T> stream) {
+        Iterator<? extends T> streamIterator = stream.iterator();
         if (streamIterator.hasNext()) {
-            Iterator bufferedIterator = new BufferedIterator(streamIterator);
+            BufferedIterator<T> bufferedIterator = new BufferedIterator<>(streamIterator);
             map.put(bufferedIterator, stream);
             iterators.add(bufferedIterator);
             originalOrder.put(bufferedIterator, index);
         } else {
-            stream.close();
+            closeStream(stream);
         }
     }
 
     @Override
     public boolean hasNext() {
-        return iterators.size() > 0 && iterators.get(0).hasNext();
+        return !iterators.isEmpty() && iterators.get(0).hasNext();
     }
 
     @Override
-    public Object next() {
-        Iterator iterator = iterators.get(0);
-        Object object = iterator.next();
+    public T next() {
+        BufferedIterator<T> iterator = iterators.get(0);
+        T object = iterator.next();
         if (!iterator.hasNext()) {
             remove(iterator);
         }
@@ -58,18 +59,44 @@ public class OrderedMultiStreamIterator implements Iterator, AutoCloseable {
         iterators.sort(comparator);
     }
 
-    private synchronized void remove(Iterator iterator) {
-        Stream stream = map.get(iterator);
+    private synchronized void remove(BufferedIterator<T> iterator) {
+        Stream<? extends T> stream = map.get(iterator);
         map.remove(iterator);
         iterators.remove(iterator);
         originalOrder.remove(iterator);
-        stream.close();
+        closeStream(stream);
+    }
+
+    private void closeStream(Stream<?> stream) {
+        try {
+            stream.close();
+        } catch (Exception e) {
+            closeExceptions.add(new RuntimeException(e));
+        }
     }
 
     @Override
     public synchronized void close() {
-        for (Stream stream : map.values()) {
-            stream.close();
+        for (Stream<?> stream : map.values()) {
+            closeStream(stream);
+        }
+        if (!closeExceptions.isEmpty()) {
+            throwCloseExceptions();
+        }
+    }
+
+    private void throwCloseExceptions() {
+        Exception first = closeExceptions.get(0);
+        for (int i = 1; i < closeExceptions.size(); i++) {
+            Exception next = closeExceptions.get(i);
+            if (first != next) {
+                first.addSuppressed(closeExceptions.get(i));
+            }
+        }
+        if (first instanceof RuntimeException) {
+            throw (RuntimeException) first;
+        } else {
+            throw new RuntimeException(first);
         }
     }
 }
